@@ -1,7 +1,4 @@
 # 🏷️ LabelLint
-<img width="1600" height="452" alt="WhatsApp Image 2026-10-06 at 17 51 20" src="https://github.com/user-attachments/assets/4bc3ea9c-6c93-4636-9a7f-c3ed90d003e5" />
-<img width="1600" height="791" alt="WhatsApp Image 2026-10-06 at 17 52 09" src="https://github.com/user-attachments/assets/afaa3b11-1a8f-42a6-8ef4-0561dbea56e0" />
-<img width="1600" height="796" alt="WhatsApp Image 2026-10-06 at 17 52 33" src="https://github.com/user-attachments/assets/7136918b-42e3-4e54-b540-c4323d56d761" />
 
 A Streamlit app that audits labelled datasets for annotation quality. It runs rule-based checks for common labelling errors, then uses Google Gemini to independently re-label a sample and measure how well the existing labels hold up, using percent agreement and Cohen's kappa.
 
@@ -29,7 +26,9 @@ Built for anyone who works with labelled data for machine learning: catch mislab
 
 ## Screenshots
 
-_Add screenshots of the app here, for example `docs/screenshot.png`._
+<img width="1600" height="452" alt="WhatsApp Image 2026-10-06 at 17 51 20" src="https://github.com/user-attachments/assets/4bc3ea9c-6c93-4636-9a7f-c3ed90d003e5" />
+<img width="1600" height="791" alt="WhatsApp Image 2026-10-06 at 17 52 09" src="https://github.com/user-attachments/assets/afaa3b11-1a8f-42a6-8ef4-0561dbea56e0" />
+<img width="1600" height="796" alt="WhatsApp Image 2026-10-06 at 17 52 33" src="https://github.com/user-attachments/assets/7136918b-42e3-4e54-b540-c4323d56d761" />
 
 ## Technologies used
 
