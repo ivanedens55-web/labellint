@@ -1,5 +1,6 @@
 """Streamlit interface for LabelLint."""
 
+import logging
 from pathlib import Path
 
 import pandas as pd
@@ -9,6 +10,12 @@ from ai_audit import relabel
 from gemini_client import AIError
 from lint import cohens_kappa, csv_row, describe_kappa, is_missing, label_set, normalize, run_checks
 
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
+logger = logging.getLogger(__name__)
+
+MAX_FILE_MB = 5
+MAX_ROWS = 10_000
+MAX_GUIDELINE_CHARS = 2_000
 SAMPLE_PATH = Path(__file__).parent / "sample_data.csv"
 MAX_LABELS = 25
 REPORT_COLUMNS = ["row", "check", "severity", "text", "label", "detail"]
@@ -21,11 +28,19 @@ def load_data():
         st.session_state.use_sample = True
     if uploaded is not None:
         st.session_state.use_sample = False
+        if uploaded.size > MAX_FILE_MB * 1024 * 1024:
+            st.error(f"That file is larger than {MAX_FILE_MB} MB. Upload a smaller CSV or a sample of it.")
+            return None
         try:
-            return pd.read_csv(uploaded)
+            df = pd.read_csv(uploaded)
         except Exception:
+            logger.exception("Failed to read uploaded CSV")
             st.error("That file couldn't be read as a CSV. Check it opens in a spreadsheet app.")
             return None
+        if len(df) > MAX_ROWS:
+            st.error(f"That file has {len(df):,} rows; the limit is {MAX_ROWS:,}. Upload a smaller sample.")
+            return None
+        return df
     if st.session_state.get("use_sample"):
         return pd.read_csv(SAMPLE_PATH)
     return None
@@ -151,7 +166,7 @@ def main():
         st.info(f"The AI audit supports up to {MAX_LABELS} labels; this dataset has {len(labels)}.")
     else:
         sample_size = st.slider("Rows to audit with AI", 5, 100, 30, step=5)
-        guidelines = st.text_area("Labelling guidelines (optional)", height=80,
+        guidelines = st.text_area("Labelling guidelines (optional)", height=80, max_chars=MAX_GUIDELINE_CHARS,
                                   placeholder="e.g. 'neutral' = factual statements with no opinion")
         if st.button("Run AI audit", type="primary"):
             try:
@@ -161,6 +176,7 @@ def main():
             except AIError as error:
                 st.session_state.audit, st.session_state.audit_error = None, str(error)
             except Exception:
+                logger.exception("Unexpected error during AI audit")
                 st.session_state.audit = None
                 st.session_state.audit_error = "Something unexpected went wrong. Try again."
 

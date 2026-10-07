@@ -5,6 +5,7 @@ into an AIError whose message is safe to show to the user.
 """
 
 import json
+import logging
 import os
 
 import httpx  # Installed with google-genai; used to catch network errors.
@@ -13,6 +14,8 @@ from google import genai
 from google.genai import errors, types
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 # Gemini 3.1 Flash-Lite is on the Gemini API free tier.
 # Set AI_MODEL in .env to use a different model without editing code.
@@ -58,17 +61,23 @@ def generate_json(prompt, system_instruction, schema, temperature=0.2):
     try:
         response = client.models.generate_content(model=model, contents=prompt, config=config)
     except errors.ClientError as error:
+        logger.warning("Gemini client error %s: %s", error.code, error.message)
         raise AIError(_client_error_message(error, model)) from error
     except errors.ServerError as error:
+        logger.warning("Gemini server error %s: %s", error.code, error.message)
         raise AIError("The AI service is having trouble right now. Wait a minute and try again.") from error
     except errors.APIError as error:
+        logger.warning("Gemini API error %s: %s", error.code, error.message)
         raise AIError(f"The AI service returned an unexpected error (code {error.code}). Try again.") from error
     except httpx.TimeoutException as error:
+        logger.warning("Gemini request timed out: %s", error)
         raise AIError("The AI service took too long to answer. Try again in a moment.") from error
     except httpx.TransportError as error:
+        logger.warning("Network error calling Gemini: %s", error)
         raise AIError("Couldn't reach the AI service. Check your internet connection and try again.") from error
 
     if not response.text:
+        logger.warning("Gemini returned an empty reply (possibly blocked by safety filters)")
         raise AIError(
             "The AI returned an empty reply, which can happen if a request is "
             "blocked by its safety filters. Try different input."
@@ -110,4 +119,15 @@ def parse_json(raw_text):
             return json.loads(text[start : end + 1])
         except json.JSONDecodeError:
             pass
+    logger.warning("Unparseable AI reply (first 300 chars): %r", raw_text[:300])
     raise AIError("The AI's reply wasn't valid JSON, so it couldn't be read. Try again.")
+
+
+def wrap_untrusted(tag, text):
+    """Wrap user-supplied text in <tag>...</tag> so the model treats it as data.
+
+    Any copies of the tag inside the text are removed, so the content can't
+    close the wrapper early and smuggle in instructions.
+    """
+    cleaned = str(text).replace(f"<{tag}", "").replace(f"</{tag}>", "")
+    return f"<{tag}>\n{cleaned.strip()}\n</{tag}>"
