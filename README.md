@@ -1,5 +1,5 @@
 # 🏷️ LabelLint
-
+![Tests](https://github.com/ivanedens55-web/labellint/actions/workflows/tests.yml/badge.svg)
 A Streamlit app that audits labelled datasets for annotation quality. It runs rule-based checks for common labelling errors, then uses Google Gemini to independently re-label a sample and measure how well the existing labels hold up, using percent agreement and Cohen's kappa.
 
 Built for anyone who works with labelled data for machine learning: catch mislabels, inconsistent spellings and conflicting duplicates before they reach a model.
